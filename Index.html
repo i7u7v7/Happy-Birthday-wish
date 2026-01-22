@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Birthday Wisher 🎉</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .container {
+    background: rgba(0,0,0,0.35);
+    padding: 24px;
+    border-radius: 14px;
+    text-align: center;
+    width: 90%;
+    max-width: 420px;
+    z-index: 2;
+  }
+
+  h1 {
+    margin-bottom: 15px;
+  }
+
+  .countdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .countdown div {
+    background: rgba(255,255,255,0.2);
+    padding: 12px 6px;
+    border-radius: 8px;
+  }
+
+  .countdown span {
+    display: block;
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  button {
+    margin-top: 15px;
+    padding: 12px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #25d366;
+    color: #000;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div class="container">
+  <h1 id="title"></h1>
+
+  <div id="countdown" class="countdown">
+    <div><span id="days">0</span>Days</div>
+    <div><span id="hours">0</span>Hours</div>
+    <div><span id="minutes">0</span>Minutes</div>
+    <div><span id="seconds">0</span>Seconds</div>
+  </div>
+
+  <div id="wish" class="hidden">
+    <h2>🎂 Happy Birthday 🎂</h2>
+    <p id="wishText"></p>
+    <button onclick="shareWhatsApp()">Share on WhatsApp</button>
+  </div>
+</div>
+
+<audio id="music">
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_28b5b3e9b7.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+/* -------- URL PARSING -------- */
+const parts = window.location.pathname.split("/");
+const name = decodeURIComponent(parts[2] || "Friend");
+const day = parseInt(parts[3] || 1);
+const month = parseInt(parts[4] || 1);
+
+document.getElementById("title").innerText =
+  `Countdown to ${name}'s Birthday`;
+
+document.getElementById("wishText").innerText =
+  `May your life be filled with happiness and success, ${name} 🎉`;
+
+/* -------- DATE LOGIC -------- */
+function getNextBirthday() {
+  const now = new Date();
+  let year = now.getFullYear();
+  let date = new Date(year, month - 1, day);
+
+  if (date < now) {
+    date = new Date(year + 1, month - 1, day);
+  }
+  return date;
+}
+
+const target = getNextBirthday();
+
+/* -------- COUNTDOWN -------- */
+function updateCountdown() {
+  const now = Date.now();
+  const diff = target - now;
+
+  if (diff <= 0) {
+    document.getElementById("countdown").classList.add("hidden");
+    document.getElementById("wish").classList.remove("hidden");
+    document.getElementById("music").play();
+    startConfetti();
+    return;
+  }
+
+  document.getElementById("days").innerText =
+    Math.floor(diff / (1000 * 60 * 60 * 24));
+  document.getElementById("hours").innerText =
+    Math.floor((diff / (1000 * 60 * 60)) % 24);
+  document.getElementById("minutes").innerText =
+    Math.floor((diff / (1000 * 60)) % 60);
+  document.getElementById("seconds").innerText =
+    Math.floor((diff / 1000) % 60);
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+/* -------- WHATSAPP SHARE -------- */
+function shareWhatsApp() {
+  const msg =
+    `🎉 Happy Birthday ${name}! 🎂\n\n` +
+    `Check this surprise:\n${window.location.href}`;
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(msg)}`,
+    "_blank"
+  );
+}
+
+/* -------- CONFETTI -------- */
+const canvas = document.getElementById("confetti");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let pieces = [];
+
+function startConfetti() {
+  for (let i = 0; i < 200; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      size: Math.random() * 8 + 4,
+      speed: Math.random() * 3 + 2,
+      color: `hsl(${Math.random() * 360},100%,50%)`
+    });
+  }
+  requestAnimationFrame(drawConfetti);
+}
+
+function drawConfetti() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  pieces.forEach(p => {
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+    p.y += p.speed;
+    if (p.y > canvas.height) p.y = -10;
+  });
+  requestAnimationFrame(drawConfetti);
+}
+</script>
+
+</body>
+</html>
