@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Birthday Wisher</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, Arial, sans-serif;
+    background: #1c1c1c;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    width: 90%;
+    max-width: 900px;
+    text-align: center;
+  }
+
+  h1 {
+    margin-bottom: 30px;
+    font-size: 36px;
+  }
+
+  .card {
+    background: #2a2a2a;
+    border-radius: 16px;
+    padding: 40px 30px;
+  }
+
+  input {
+    width: 100%;
+    max-width: 360px;
+    padding: 14px;
+    margin: 10px auto;
+    display: block;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #1f1f1f;
+    color: #fff;
+    font-size: 16px;
+  }
+
+  button {
+    margin-top: 20px;
+    padding: 14px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid #888;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .link {
+    margin-top: 20px;
+    word-break: break-all;
+    color: #bbb;
+  }
+
+  .countdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin: 40px 0;
+  }
+
+  .box {
+    background: #3b3a64;
+    border-radius: 18px;
+    padding: 30px 10px;
+  }
+
+  .box span {
+    display: block;
+    font-size: 44px;
+    font-weight: 700;
+  }
+
+  .label {
+    font-size: 18px;
+    color: #bfc2ff;
+  }
+
+  .muted {
+    color: #9fa3ff;
+    margin-top: 20px;
+    font-size: 20px;
+  }
+
+  a {
+    color: #8f8cff;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  @media (max-width: 700px) {
+    .countdown {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    h1 {
+      font-size: 28px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- GENERATE PAGE -->
+  <div id="generatePage" class="card hidden">
+    <h1>Generate Here</h1>
+
+    <input id="nameInput" placeholder="Name">
+    <input id="dayInput" type="number" placeholder="Day (1-31)">
+    <input id="monthInput" placeholder="Month (March)">
+
+    <button onclick="generateLink()">Generate Link</button>
+
+    <div id="generatedLink" class="link"></div>
+
+    <button id="visitBtn" class="hidden" onclick="visitLink()">Visit Link</button>
+  </div>
+
+  <!-- COUNTDOWN PAGE -->
+  <div id="countdownPage" class="hidden">
+    <h1 id="title"></h1>
+
+    <div class="countdown">
+      <div class="box"><span id="days">0</span><div class="label">Days</div></div>
+      <div class="box"><span id="hours">0</span><div class="label">Hours</div></div>
+      <div class="box"><span id="minutes">0</span><div class="label">Minutes</div></div>
+      <div class="box"><span id="seconds">0</span><div class="label">Seconds</div></div>
+    </div>
+
+    <div id="birthDateText" class="muted"></div>
+
+    <div style="margin-top:40px">
+      <a href="./">Generate Here</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ---------- HELPERS ---------- */
+const monthMap = {
+  january:1,february:2,march:3,april:4,may:5,june:6,
+  july:7,august:8,september:9,october:10,november:11,december:12
+};
+
+const monthNames = Object.keys(monthMap)
+  .reduce((a,k)=>{a[monthMap[k]]=k;return a;},{});
+
+/* ---------- ROUTE PARSE ---------- */
+const path = window.location.pathname.replace(/^\/|\/$/g,"").split("/");
+
+let name, day, month;
+
+if (path.length >= 4 && path[path.length - 4] === "birthday") {
+  name = decodeURIComponent(path[path.length - 3]);
+  day = parseInt(path[path.length - 2]);
+  month = parseInt(path[path.length - 1]);
+  showCountdown();
+} else {
+  showGenerator();
+}
+
+/* ---------- GENERATE ---------- */
+function showGenerator() {
+  document.getElementById("generatePage").classList.remove("hidden");
+}
+
+function generateLink() {
+  const n = document.getElementById("nameInput").value.trim();
+  const d = document.getElementById("dayInput").value;
+  const mText = document.getElementById("monthInput").value.trim().toLowerCase();
+
+  if (!n || !d || !monthMap[mText]) {
+    alert("Please enter valid name, day and month");
+    return;
+  }
+
+  const m = monthMap[mText];
+  const url = `${location.origin}${location.pathname}birthday/${encodeURIComponent(n)}/${d}/${m}`;
+
+  document.getElementById("generatedLink").innerText = url;
+  document.getElementById("visitBtn").classList.remove("hidden");
+  window.generatedUrl = url;
+}
+
+function visitLink() {
+  window.location.href = window.generatedUrl;
+}
+
+/* ---------- COUNTDOWN ---------- */
+function showCountdown() {
+  document.getElementById("countdownPage").classList.remove("hidden");
+
+  document.getElementById("title").innerHTML =
+    `Countdown to <span style="color:#8f8cff">${name}</span>'s Birthday`;
+
+  document.getElementById("birthDateText").innerText =
+    `Birth-Date: ${day} ${monthNames[month][0].toUpperCase()+monthNames[month].slice(1)}`;
+
+  const target = getNextBirthday();
+
+  setInterval(() => updateCountdown(target), 1000);
+  updateCountdown(target);
+}
+
+function getNextBirthday() {
+  const now = new Date();
+  let year = now.getFullYear();
+  let date = new Date(year, month - 1, day);
+  if (date < now) date = new Date(year + 1, month - 1, day);
+  return date;
+}
+
+function updateCountdown(target) {
+  const diff = target - Date.now();
+  if (diff <= 0) return;
+
+  days.textContent = Math.floor(diff / 86400000);
+  hours.textContent = Math.floor(diff / 3600000) % 24;
+  minutes.textContent = Math.floor(diff / 60000) % 60;
+  seconds.textContent = Math.floor(diff / 1000) % 60;
+}
+</script>
+
+</body>
+</html>
