@@ -9,18 +9,25 @@
   body {
     margin: 0;
     font-family: system-ui, Arial, sans-serif;
-    background: #1c1c1c;
+    background: #121212;
     color: #fff;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
   .container {
-    width: 90%;
+    width: 92%;
     max-width: 900px;
     text-align: center;
+  }
+
+  .card {
+    background: #1e1e1e;
+    border-radius: 20px;
+    padding: 40px 30px;
   }
 
   h1 {
@@ -28,32 +35,26 @@
     font-size: 36px;
   }
 
-  .card {
-    background: #2a2a2a;
-    border-radius: 16px;
-    padding: 40px 30px;
-  }
-
-  input {
+  input, select {
     width: 100%;
     max-width: 360px;
     padding: 14px;
-    margin: 10px auto;
+    margin: 12px auto;
     display: block;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid #444;
-    background: #1f1f1f;
+    background: #121212;
     color: #fff;
     font-size: 16px;
   }
 
   button {
     margin-top: 20px;
-    padding: 14px 30px;
+    padding: 14px 34px;
     font-size: 16px;
     font-weight: 600;
-    border-radius: 10px;
-    border: 1px solid #888;
+    border-radius: 12px;
+    border: 1px solid #777;
     background: transparent;
     color: #fff;
     cursor: pointer;
@@ -61,8 +62,8 @@
 
   .link {
     margin-top: 20px;
+    color: #aaa;
     word-break: break-all;
-    color: #bbb;
   }
 
   .countdown {
@@ -73,8 +74,8 @@
   }
 
   .box {
-    background: #3b3a64;
-    border-radius: 18px;
+    background: #3c3b66;
+    border-radius: 20px;
     padding: 30px 10px;
   }
 
@@ -86,7 +87,7 @@
 
   .label {
     font-size: 18px;
-    color: #bfc2ff;
+    color: #c7c9ff;
   }
 
   .muted {
@@ -105,6 +106,12 @@
     display: none;
   }
 
+  canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+
   @media (max-width: 700px) {
     .countdown {
       grid-template-columns: repeat(2, 1fr);
@@ -118,6 +125,12 @@
 
 <body>
 
+<canvas id="confetti"></canvas>
+
+<audio id="music">
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_28b5b3e9b7.mp3">
+</audio>
+
 <div class="container">
 
   <!-- GENERATE PAGE -->
@@ -125,8 +138,14 @@
     <h1>Generate Here</h1>
 
     <input id="nameInput" placeholder="Name">
-    <input id="dayInput" type="number" placeholder="Day (1-31)">
-    <input id="monthInput" placeholder="Month (March)">
+
+    <select id="dayInput">
+      <option value="">Select Day</option>
+    </select>
+
+    <select id="monthInput">
+      <option value="">Select Month</option>
+    </select>
 
     <button onclick="generateLink()">Generate Link</button>
 
@@ -148,6 +167,8 @@
 
     <div id="birthDateText" class="muted"></div>
 
+    <button onclick="shareWhatsApp()">Share on WhatsApp</button>
+
     <div style="margin-top:40px">
       <a href="./">Generate Here</a>
     </div>
@@ -156,17 +177,22 @@
 </div>
 
 <script>
-/* ---------- HELPERS ---------- */
-const monthMap = {
-  january:1,february:2,march:3,april:4,may:5,june:6,
-  july:7,august:8,september:9,october:10,november:11,december:12
-};
+/* ---------- MONTH DATA ---------- */
+const months = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
-const monthNames = Object.keys(monthMap)
-  .reduce((a,k)=>{a[monthMap[k]]=k;return a;},{});
+/* ---------- POPULATE DROPDOWNS ---------- */
+for (let i = 1; i <= 31; i++) {
+  dayInput.innerHTML += `<option value="${i}">${i}</option>`;
+}
+months.forEach((m, i) => {
+  monthInput.innerHTML += `<option value="${i+1}">${m}</option>`;
+});
 
-/* ---------- ROUTE PARSE ---------- */
-const path = window.location.pathname.replace(/^\/|\/$/g,"").split("/");
+/* ---------- ROUTING ---------- */
+const path = location.pathname.replace(/^\/|\/$/g,"").split("/");
 
 let name, day, month;
 
@@ -176,57 +202,59 @@ if (path.length >= 4 && path[path.length - 4] === "birthday") {
   month = parseInt(path[path.length - 1]);
   showCountdown();
 } else {
-  showGenerator();
+  generatePage.classList.remove("hidden");
 }
 
-/* ---------- GENERATE ---------- */
-function showGenerator() {
-  document.getElementById("generatePage").classList.remove("hidden");
-}
-
+/* ---------- GENERATE LINK ---------- */
 function generateLink() {
-  const n = document.getElementById("nameInput").value.trim();
-  const d = document.getElementById("dayInput").value;
-  const mText = document.getElementById("monthInput").value.trim().toLowerCase();
+  const n = nameInput.value.trim();
+  const d = dayInput.value;
+  const m = monthInput.value;
 
-  if (!n || !d || !monthMap[mText]) {
-    alert("Please enter valid name, day and month");
+  if (!n || !d || !m) {
+    alert("Please fill all fields");
     return;
   }
 
-  const m = monthMap[mText];
   const url = `${location.origin}${location.pathname}birthday/${encodeURIComponent(n)}/${d}/${m}`;
-
-  document.getElementById("generatedLink").innerText = url;
-  document.getElementById("visitBtn").classList.remove("hidden");
+  generatedLink.innerText = url;
+  visitBtn.classList.remove("hidden");
   window.generatedUrl = url;
 }
 
 function visitLink() {
-  window.location.href = window.generatedUrl;
+  location.href = window.generatedUrl;
 }
 
 /* ---------- COUNTDOWN ---------- */
 function showCountdown() {
-  document.getElementById("countdownPage").classList.remove("hidden");
+  countdownPage.classList.remove("hidden");
 
-  document.getElementById("title").innerHTML =
+  title.innerHTML =
     `Countdown to <span style="color:#8f8cff">${name}</span>'s Birthday`;
 
-  document.getElementById("birthDateText").innerText =
-    `Birth-Date: ${day} ${monthNames[month][0].toUpperCase()+monthNames[month].slice(1)}`;
+  birthDateText.innerText =
+    `Birth-Date: ${day} ${months[month-1]}`;
 
   const target = getNextBirthday();
-
-  setInterval(() => updateCountdown(target), 1000);
   updateCountdown(target);
+  setInterval(() => updateCountdown(target), 1000);
 }
 
 function getNextBirthday() {
   const now = new Date();
   let year = now.getFullYear();
   let date = new Date(year, month - 1, day);
+
   if (date < now) date = new Date(year + 1, month - 1, day);
+
+  if (
+    now.getDate() === day &&
+    now.getMonth() === month - 1
+  ) {
+    startCelebration();
+  }
+
   return date;
 }
 
@@ -238,6 +266,51 @@ function updateCountdown(target) {
   hours.textContent = Math.floor(diff / 3600000) % 24;
   minutes.textContent = Math.floor(diff / 60000) % 60;
   seconds.textContent = Math.floor(diff / 1000) % 60;
+}
+
+/* ---------- WHATSAPP SHARE ---------- */
+function shareWhatsApp() {
+  const msg =
+    `🎉 Countdown to ${name}'s Birthday!\n\n${location.href}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+}
+
+/* ---------- CONFETTI + MUSIC ---------- */
+function startCelebration() {
+  music.play();
+  startConfetti();
+}
+
+/* ---------- CONFETTI ---------- */
+const canvas = document.getElementById("confetti");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let confetti = [];
+
+function startConfetti() {
+  for (let i = 0; i < 200; i++) {
+    confetti.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 6 + 4,
+      d: Math.random() * 5 + 2,
+      c: `hsl(${Math.random()*360},100%,50%)`
+    });
+  }
+  animateConfetti();
+}
+
+function animateConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confetti.forEach(p => {
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x, p.y, p.r, p.r);
+    p.y += p.d;
+    if (p.y > canvas.height) p.y = -10;
+  });
+  requestAnimationFrame(animateConfetti);
 }
 </script>
 
